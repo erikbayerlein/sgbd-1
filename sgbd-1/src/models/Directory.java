@@ -106,25 +106,19 @@ public class Directory {
     }
 
     private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth, int newValue){
-        DirectoryLine auxLine = new DirectoryLine(oldLine);
-        Bucket auxBucket = new Bucket(oldLine.getBucket().getInData());
-        auxLine.setBucket(auxBucket);
+        oldLine.getBucket().getInData().add(newValue);
+        List<Integer> auxData = new ArrayList<>(oldLine.getBucket().getInData());
 
         Bucket newBucket = new Bucket(oldLine.getBucket().getName() + "k");
         newLine.setBucket(newBucket);
 
-
-        auxLine.getBucket().getInData().add(newValue);
-
-        auxLine.getBucket().getInData().forEach(key -> {
+        auxData.forEach(key -> {
             String newBucketName = Hasher.hash(key, depth);
             if (newBucketName.equals(newLine.getIndex())) {
                 newLine.getBucket().getInData().add(key);
                 oldLine.getBucket().getInData().remove(key);
             }
         });
-
-        newLine.getBucket().setName("teu cu");
 
         oldLine.setLocalDepth(depth);
         newLine.setLocalDepth(depth);
