@@ -2,7 +2,12 @@ import models.Directory;
 
 public class Main {
     public static void main(String[] args) {
-        Directory directory = new Directory();
+
+        // ------------------------- Adicionar lógica de ler in.txt -------------------------
+
+        //----------------------------------------------------------------------------------
+
+        Directory directory = new Directory(2);
 
         directory.search(2014);
 

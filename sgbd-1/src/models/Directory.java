@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 public class Directory {
-    private int globalDepth = 3;
+    private int globalDepth;
     private List<DirectoryLine> directoryLines;
 
     Logger logger = Logger.getLogger(getClass().getName());
@@ -16,6 +16,10 @@ public class Directory {
     public Directory(int globalDepth, List<DirectoryLine> directoryLines) {
         setGlobalDepth(globalDepth);
         setDirectoryLines(directoryLines);
+    }
+
+    public Directory(int globalDepth) {
+        setGlobalDepth(globalDepth);
     }
 
     public Directory() {
@@ -30,6 +34,7 @@ public class Directory {
         directoryLines.add(new DirectoryLine("110", 3));
         directoryLines.add(new DirectoryLine("111", 3));
     }
+
 
 
     public int getGlobalDepth() {
@@ -60,7 +65,6 @@ public class Directory {
                 if (bucket.getInData().contains(key)) {
                     logger.info("key found in bucket " + bucket.getName());
                 } else {
-                    System.out.println("key not found in bucket " + bucket.getName());
                     logger.info("key not found in bucket " + bucket.getName());
                 }
             } else {
@@ -128,7 +132,7 @@ public class Directory {
         }
     }
 
-    public void remove(int key){
+    public void remove(int key) {
         String bucketIndex = Hasher.hash(key, globalDepth);
         DirectoryLine directoryLine = directoryLines.stream()
                 .filter(line -> Objects.equals(line.getIndex(), bucketIndex))
