@@ -16,6 +16,11 @@ public class DirectoryLine {
         setLocalDepth(localDepth);
     }
 
+    public DirectoryLine(DirectoryLine directoryLineClone) {
+        setIndex(directoryLineClone.getIndex());
+        setLocalDepth(directoryLineClone.getLocalDepth());
+    }
+
     public DirectoryLine() {}
 
     public String getIndex() {

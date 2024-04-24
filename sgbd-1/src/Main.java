@@ -11,7 +11,10 @@ public class Main {
 
         directory.search(2014);
 
-//        directory.insert(2014);
+        directory.insert(2014);
+        directory.insert(10);
+        directory.insert(46);
+        directory.insert(34);
 //        directory.insert(2000);
 //        directory.insert(1987);
 //        directory.insert(2024);

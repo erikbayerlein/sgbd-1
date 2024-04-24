@@ -2,6 +2,7 @@ package models;
 
 import hashFunction.Hasher;
 
+import java.beans.Beans;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -9,32 +10,18 @@ import java.util.logging.Logger;
 
 public class Directory {
     private int globalDepth;
-    private List<DirectoryLine> directoryLines;
+    private List<DirectoryLine> directoryLines = new ArrayList<>();
 
     Logger logger = Logger.getLogger(getClass().getName());
 
-    public Directory(int globalDepth, List<DirectoryLine> directoryLines) {
-        setGlobalDepth(globalDepth);
-        setDirectoryLines(directoryLines);
-    }
-
     public Directory(int globalDepth) {
         setGlobalDepth(globalDepth);
+
+        directoryLines.add(new DirectoryLine("00", new Bucket("A"), 2));
+        directoryLines.add(new DirectoryLine("01", new Bucket("B"), 2));
+        directoryLines.add(new DirectoryLine("10", new Bucket("C"),2));
+        directoryLines.add(new DirectoryLine("11", new Bucket("D"),2));
     }
-
-    public Directory() {
-        this.directoryLines = new ArrayList<DirectoryLine>();
-
-        directoryLines.add(new DirectoryLine("000", 2));
-        directoryLines.add(new DirectoryLine("001", 2));
-        directoryLines.add(new DirectoryLine("010", 3));
-        directoryLines.add(new DirectoryLine("011", 2));
-        directoryLines.add(new DirectoryLine("100", 3));
-        directoryLines.add(new DirectoryLine("101", 2));
-        directoryLines.add(new DirectoryLine("110", 3));
-        directoryLines.add(new DirectoryLine("111", 3));
-    }
-
 
 
     public int getGlobalDepth() {
@@ -51,6 +38,15 @@ public class Directory {
 
     public void setDirectoryLines(List<DirectoryLine> directoryLines) {
         this.directoryLines = directoryLines;
+    }
+
+    public DirectoryLine searchByIndex(String index) {
+        DirectoryLine line = directoryLines.stream()
+                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), index))
+                .findFirst()
+                .orElse(null);
+
+        return line;
     }
 
     public List<DirectoryLine> search(int key) {
@@ -76,12 +72,14 @@ public class Directory {
     }
 
     public void insert(int key) {
-        List<DirectoryLine> lines = search(key);
-        Bucket bucket;
+        String bucketName = Hasher.hash(key, globalDepth);
+        List<DirectoryLine> lines = directoryLines.stream()
+                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketName))
+                .toList();
 
-        bucket = lines.get(0).getBucket();
+        Bucket bucket = lines.get(0).getBucket();
 
-        if (bucket.getInData().size() < 2) { // bucket is not full
+        if (bucket.getInData().size() <= 2) { // bucket is not full
             bucket.getInData().add(key);
             logger.info("Key inserted in bucket " + bucket.getName());
         } else { // bucket is full
@@ -90,7 +88,7 @@ public class Directory {
             if (lines.size() > 1) { // localDepth < globalDepth
                 if (bucket.getInData().size() == 2) { // bucket is full
                     lines.get(1).setBucket(newBucket);
-                    distributeBucket(lines.get(0), lines.get(1), globalDepth);
+                    distributeBucket(lines.get(0), lines.get(1), globalDepth, key);
                 } else { // bucket is not full
                     bucket.getInData().add(key);
                 }
@@ -98,22 +96,36 @@ public class Directory {
                 if (bucket.getInData().size() < 2) { // bucket is not full
                     bucket.getInData().add(key);
                 } else { // bucket is full
+                    String newIndex = "1" + lines.get(0).getIndex();
                     duplicateDirectory();
-                    DirectoryLine directoryLine = search(key).get(0);
-                    distributeBucket(lines.get(0), directoryLine, globalDepth);
+                    DirectoryLine line = searchByIndex(newIndex);
+                    distributeBucket(lines.get(0), line, globalDepth, key);
                 }
             }
         }
     }
 
-    private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth){
-        oldLine.getBucket().getInData().forEach((key) -> {
+    private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth, int newValue){
+        DirectoryLine auxLine = new DirectoryLine(oldLine);
+        Bucket auxBucket = new Bucket(oldLine.getBucket().getInData());
+        auxLine.setBucket(auxBucket);
+
+        Bucket newBucket = new Bucket(oldLine.getBucket().getName() + "k");
+        newLine.setBucket(newBucket);
+
+
+        auxLine.getBucket().getInData().add(newValue);
+
+        auxLine.getBucket().getInData().forEach(key -> {
             String newBucketName = Hasher.hash(key, depth);
             if (newBucketName.equals(newLine.getIndex())) {
                 newLine.getBucket().getInData().add(key);
-                oldLine.getBucket().getInData().remove((Integer) key);
+                oldLine.getBucket().getInData().remove(key);
             }
         });
+
+        newLine.getBucket().setName("teu cu");
+
         oldLine.setLocalDepth(depth);
         newLine.setLocalDepth(depth);
     }
@@ -124,9 +136,13 @@ public class Directory {
         for (int i = 0; i < size; i++) {
             DirectoryLine line = directoryLines.get(i);
             DirectoryLine newLine = new DirectoryLine();
-            line.setIndex(line.getIndex() + "0");
-            newLine.setIndex(line.getIndex() + "1");
+            newLine.setIndex("1" + line.getIndex());
+            line.setIndex("0" + line.getIndex());
             newLine.setBucket(line.getBucket());
+
+            Bucket bucket = newLine.getBucket();
+            bucket.setName(bucket.getName() + i);
+
             newLine.setLocalDepth(line.getLocalDepth());
             directoryLines.add(newLine);
         }
