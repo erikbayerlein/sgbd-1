@@ -1,4 +1,8 @@
+import csv.CsvReader;
 import models.Directory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
@@ -8,6 +12,19 @@ public class Main {
         //----------------------------------------------------------------------------------
 
         Directory directory = new Directory(2);
+
+        List<Integer> csvYears = new ArrayList<>();
+
+        try {
+            List<String[]> shoppingData = CsvReader.readCsv();
+            for (String[] row : shoppingData) {
+                csvYears.add(Integer.parseInt(row[2])); // row[0] = id, row[1] = value, row[2] = year
+            }
+        } catch (Exception err) {
+            System.err.println("Error reading CSV file: " + err.getMessage());
+        }
+
+        csvYears.forEach(directory::insert);
 
         directory.insert(2014);
         directory.insert(1995);

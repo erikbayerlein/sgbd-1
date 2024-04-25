@@ -2,7 +2,6 @@ package models;
 
 import hashFunction.Hasher;
 
-import java.beans.Beans;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -41,12 +40,10 @@ public class Directory {
     }
 
     public DirectoryLine searchByIndex(String index) {
-        DirectoryLine line = directoryLines.stream()
+        return directoryLines.stream()
                 .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), index))
                 .findFirst()
                 .orElse(null);
-
-        return line;
     }
 
     public List<DirectoryLine> search(int key) {
@@ -140,6 +137,8 @@ public class Directory {
             newLine.setLocalDepth(line.getLocalDepth());
             directoryLines.add(newLine);
         }
+
+        System.out.println("Directory duplicated");
     }
 
     public void remove(int key) {
