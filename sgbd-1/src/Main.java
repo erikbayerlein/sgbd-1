@@ -1,19 +1,49 @@
 import csv.CsvReader;
 import models.Directory;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
+        Directory directory = new Directory(2);
 
         // ------------------------- Adicionar lógica de ler in.txt -------------------------
+        final String finalPath = "./in.txt";
+        try (BufferedReader br = new BufferedReader(new FileReader(finalPath))) {
+            String firstLine = br.readLine();
+            if (firstLine != null) {
+                int closeIconPosition = firstLine.lastIndexOf(">");
+                String globalDepth = firstLine.substring(4, closeIconPosition);
+                directory.setGlobalDepth(Integer.parseInt(globalDepth));
+            }
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                switch (line.substring(0, 3)){
+                    case "INC":
+                        directory.insert(Integer.parseInt(line.substring(4)));
+                        break;
+                    case "REM":
+                        directory.remove(Integer.parseInt(line.substring(5)));
+                        break;
+                    case "BUS":
+                        directory.search(Integer.parseInt(line.substring(6)));
+                        break;
+                    default:
+                        System.err.println("Invalid command: " + line);
+                        break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading file: " + e.getMessage());
+        }
 
         //----------------------------------------------------------------------------------
 
-        Directory directory = new Directory(2);
-
-        List<Integer> csvYears = new ArrayList<>();
+             List<Integer> csvYears = new ArrayList<>();
 
         try {
             List<String[]> shoppingData = CsvReader.readCsv();
@@ -26,46 +56,6 @@ public class Main {
 
         csvYears.forEach(directory::insert);
 
-        directory.insert(2014);
-        directory.insert(1995);
-        directory.insert(2012);
-        directory.insert(2013);
-        directory.insert(1992);
-        directory.insert(2020);
-        directory.insert(2024);
-        directory.insert(1994);
-        directory.insert(1998);
 
-        directory.search(2014);
-        directory.search(1995);
-        directory.search(2012);
-        directory.search(2013);
-        directory.search(1992);
-        directory.search(2020);
-        directory.search(2024);
-        directory.search(1994);
-        directory.search(1998);
-
-        directory.remove(2014);
-        directory.remove(1995);
-        directory.remove(2012);
-        directory.remove(2013);
-        directory.remove(1992);
-        directory.remove(2020);
-        directory.remove(2024);
-        directory.remove(1994);
-        directory.remove(1998);
-
-        directory.search(2014);
-        directory.search(1995);
-        directory.search(2012);
-        directory.search(2013);
-        directory.search(1992);
-        directory.search(2020);
-        directory.search(2024);
-        directory.search(1994);
-        directory.search(1998);
-
-        System.out.println("Hello world!");
     }
 }
