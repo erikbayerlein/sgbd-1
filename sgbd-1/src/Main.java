@@ -1,16 +1,15 @@
-import csv.CsvReader;
 import models.Directory;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
-import java.util.ArrayList;
+import java.io.FileWriter;
 import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
 
-        // ------------------------- Adicionar lógica de ler in.txt -------------------------
-        final String finalPath = "./in.txt";
+        final String finalPath = "src/io/in.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(finalPath))) {
             String firstLine = br.readLine();
             int closeIconPosition = firstLine.indexOf("/"); // não precisa
@@ -18,26 +17,37 @@ public class Main {
             String globalDepth = firstLine.substring(closeIconPosition + 1);
             Directory directory = new Directory(Integer.parseInt(globalDepth));
 
-            List<Integer> depths;
+            BufferedWriter writer = new BufferedWriter(new FileWriter("src/io/out.txt"));
+            writer.write("PG/" + globalDepth + "\n");
+
+            List<int[]> tuplesAdded;
+            int[] tuplesRemoved;
+            int tuplesFound;
 
             String line;
             while ((line = br.readLine()) != null) {
                 switch (line.substring(0, 3)){
                     case "INC":
-                        depths = directory.insert(Integer.parseInt(line.substring(4)));
-                        System.out.println("INC:" + line.substring(4) + "," + depths.get(0) + "," + depths.get(1));
+                        tuplesAdded = directory.insert(Integer.parseInt(line.substring(4)), writer);
+                        writer.write("INC:" + line.substring(4) + "/" + tuplesAdded.get(0)[0] + "," + tuplesAdded.get(1)[1] + "\n");
                         break;
                     case "REM":
-                        directory.remove(Integer.parseInt(line.substring(4)));
+                        tuplesRemoved = directory.remove(Integer.parseInt(line.substring(4)));
+                        writer.write("REM:" + line.substring(4) + "/" + tuplesRemoved[0] + "," + tuplesRemoved[1] + "," + tuplesRemoved[2] + "\n");
                         break;
                     case "BUS":
-                        directory.search(Integer.parseInt(line.substring(5)));
+                        tuplesFound = directory.search(Integer.parseInt(line.substring(5)));
+                        writer.write("BUS:" + line.substring(5) + "/" + tuplesFound + "\n");
                         break;
                     default:
                         System.err.println("Invalid command: " + line);
                         break;
                 }
             }
+
+            writer.write("PN:/" + directory.getGlobalDepth());
+
+            writer.close();
         } catch (Exception e) {
             System.err.println("Error reading file: " + e.getMessage());
         }

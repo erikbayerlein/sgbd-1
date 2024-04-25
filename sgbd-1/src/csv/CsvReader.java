@@ -11,7 +11,7 @@ import java.util.List;
 public interface CsvReader {
     static List<Shopping> readCsv() {
         List<Shopping> data = new ArrayList<>();
-        String filePath = "./csv/shopping.csv";
+        String filePath = "src/csv/shopping.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {

@@ -3,6 +3,7 @@ package models;
 import csv.CsvReader;
 import hashFunction.Hasher;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,44 +71,48 @@ public class Directory {
                 .orElse(null);
     }
 
-    public List<DirectoryLine> search(int key) {
+    public int search(int key) {
         String bucketIndex = Hasher.hash(key, globalDepth);
         List<DirectoryLine> lines = directoryLines.stream()
                 .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketIndex))
                 .toList();
 
-        lines.forEach(line -> {
+        int numOfTuplesFound = 0;
+
+        for (DirectoryLine line : lines) {
             Bucket bucket = line.getBucket();
             if (bucket != null) {
-                if (bucket.getInData().contains(key)) {
-                    logger.info("key found in bucket " + bucket.getName());
+                if (bucket.getInData().stream().anyMatch(shopping -> shopping.getYear() == key)) {
+                    numOfTuplesFound++;
+                    logger.info("Key found in bucket " + bucket.getName());
                 } else {
-                    logger.info("key not found in bucket " + bucket.getName());
+                    logger.info("Key not found in bucket " + bucket.getName());
                 }
             } else {
                 logger.info("Bucket does not exist");
             }
-        });
+        }
 
-        return lines;
+        return numOfTuplesFound;
     }
 
-    public List<Integer> insert(int key) {
-        String bucketName = Hasher.hash(key, globalDepth);
+    public List<int[]> insert(int key, BufferedWriter writer) {
+        List<Shopping> shoppings = CsvReader.readCsv();
 
-        List<Shopping> shoppingData = CsvReader.readCsv();
-
-        Shopping shoppingToBeAdded = shoppingData
-                .stream()
+        return shoppings.stream()
                 .filter(shopping -> shopping.getYear() == key)
-                .findFirst()
-                .orElse(null);
+                .map(s -> insertIntoBucket(key, s, writer))
+                .toList();
+    }
+
+    public int[] insertIntoBucket(int key, Shopping shoppingToBeAdded, BufferedWriter writer) {
+        String bucketName = Hasher.hash(key, globalDepth);
 
         List<DirectoryLine> lines = directoryLines.stream()
                 .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketName))
                 .toList();
 
-        List<Integer> depths = new ArrayList<>();
+        int[] depths = new int[2];
 
         Bucket bucket = lines.get(0).getBucket();
 
@@ -131,12 +136,17 @@ public class Directory {
                     String newIndex = "1" + lines.get(0).getIndex();
                     duplicateDirectory();
                     DirectoryLine line = searchByIndex(newIndex);
+                    try {
+                        writer.write("DUP_DIR:" + globalDepth + "," + line.getLocalDepth() + "\n");
+                    } catch (IOException err) {
+                        System.out.println(err);
+                    }
                     distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
                 }
             }
         }
-        depths.add(globalDepth);
-        depths.add(lines.get(0).getLocalDepth());
+        depths[0] = globalDepth;
+        depths[1] = lines.get(0).getLocalDepth();
 
         return depths;
     }
@@ -180,18 +190,23 @@ public class Directory {
         System.out.println("Directory duplicated");
     }
 
-    public void remove(int key) {
+    public int[] remove(int key) {
         String bucketIndex = Hasher.hash(key, globalDepth);
         DirectoryLine directoryLine = directoryLines.stream()
                 .filter(line -> Objects.equals(line.getIndex(), bucketIndex))
                 .findFirst()
                 .orElse(null);
 
+        int[] tuplesRemoved = new int[3];
+
         if (directoryLine != null) {
             Bucket bucket = directoryLine.getBucket();
             if (bucket.getInData().stream().anyMatch(shopping -> shopping.getYear() == key)){
                 Shopping shoppingToBeDeleted = bucket.getInData().stream().filter(s -> s.getYear() == key).findFirst().orElse(null);
                 bucket.getInData().remove(shoppingToBeDeleted);
+                tuplesRemoved[0] += 1;
+                tuplesRemoved[1] = globalDepth;
+                tuplesRemoved[2] = directoryLine.getLocalDepth();
                 logger.info("Key removed from bucket " + bucket.getName());
             } else {
                 logger.info("Key not found in bucket " + bucket.getName());
@@ -199,6 +214,8 @@ public class Directory {
         } else {
             logger.info("Key not found in directory");
         }
+
+        return tuplesRemoved;
     }
 
 }
