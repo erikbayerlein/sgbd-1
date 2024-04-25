@@ -27,10 +27,10 @@ public class Main {
                         directory.insert(Integer.parseInt(line.substring(4)));
                         break;
                     case "REM":
-                        directory.remove(Integer.parseInt(line.substring(5)));
+                        directory.remove(Integer.parseInt(line.substring(4)));
                         break;
                     case "BUS":
-                        directory.search(Integer.parseInt(line.substring(6)));
+                        directory.search(Integer.parseInt(line.substring(5)));
                         break;
                     default:
                         System.err.println("Invalid command: " + line);
