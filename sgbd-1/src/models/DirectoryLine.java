@@ -1,13 +1,17 @@
 package models;
 
+import csv.CsvReader;
+
+import java.util.UUID;
+
 public class DirectoryLine {
     private String index;
     private int localDepth;
-    private Bucket bucket;
+    private String bucketName;
 
-    public DirectoryLine(String index, Bucket bucket, int localDepth) {
+    public DirectoryLine(String index, String bucketName, int localDepth) {
         setIndex(index);
-        setBucket(bucket);
+        setBucket(bucketName);
         setLocalDepth(localDepth);
     }
 
@@ -40,10 +44,11 @@ public class DirectoryLine {
     }
 
     public Bucket getBucket() {
-        return bucket;
+        UUID bucketId = UUID.fromString(bucketName.substring(bucketName.indexOf("_") + 1));
+        return new Bucket(bucketId, bucketName, CsvReader.readBucketCsv(bucketName) );
     }
 
-    public void setBucket(Bucket bucket) {
-        this.bucket = bucket;
+    public void setBucket(String bucket) {
+        this.bucketName = bucket;
     }
 }

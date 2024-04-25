@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class Directory {
@@ -21,15 +22,10 @@ public class Directory {
 
         List<String> binaryNumbers = generateBinaryNumbers(globalDepth);
         binaryNumbers.forEach(binary -> {
-            Bucket bucket = new Bucket(binary);
-            DirectoryLine line = new DirectoryLine(binary, bucket, globalDepth);
+            Bucket bucket = new Bucket(UUID.randomUUID());
+            DirectoryLine line = new DirectoryLine(binary, bucket.getName(), globalDepth);
             directoryLines.add(line);
         });
-
-//        directoryLines.add(new DirectoryLine("00", new Bucket("A"), 2));
-//        directoryLines.add(new DirectoryLine("01", new Bucket("B"), 2));
-//        directoryLines.add(new DirectoryLine("10", new Bucket("C"),2));
-//        directoryLines.add(new DirectoryLine("11", new Bucket("D"),2));
     }
 
 
@@ -97,7 +93,7 @@ public class Directory {
     }
 
     public List<int[]> insert(int key, BufferedWriter writer) {
-        List<Shopping> shoppings = CsvReader.readCsv();
+        List<Shopping> shoppings = CsvReader.readShoppingCsv();
 
         return shoppings.stream()
                 .filter(shopping -> shopping.getYear() == key)
@@ -120,11 +116,12 @@ public class Directory {
             bucket.getInData().add(shoppingToBeAdded);
             logger.info("Key inserted in bucket " + bucket.getName());
         } else { // bucket is full
-            Bucket newBucket = new Bucket();
+            UUID bucketId = UUID.randomUUID();
+            Bucket newBucket = new Bucket(bucketId);
 
             if (lines.size() > 1) { // localDepth < globalDepth
                 if (bucket.getInData().size() == 2) { // bucket is full
-                    lines.get(1).setBucket(newBucket);
+                    lines.get(1).setBucket(newBucket.getName());
                     distributeBucket(lines.get(0), lines.get(1), globalDepth, shoppingToBeAdded);
                 } else { // bucket is not full
                     bucket.getInData().add(shoppingToBeAdded);
@@ -136,12 +133,12 @@ public class Directory {
                     String newIndex = "1" + lines.get(0).getIndex();
                     duplicateDirectory();
                     DirectoryLine line = searchByIndex(newIndex);
+                    distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
                     try {
                         writer.write("DUP_DIR:" + globalDepth + "," + line.getLocalDepth() + "\n");
                     } catch (IOException err) {
                         System.out.println(err);
                     }
-                    distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
                 }
             }
         }
@@ -153,16 +150,19 @@ public class Directory {
 
     private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth, Shopping newValue){
         oldLine.getBucket().getInData().add(newValue);
+        oldLine.getBucket().updateCsv("./buckets/" + oldLine.getBucket().getName() + ".csv");
         List<Shopping> auxData = new ArrayList<>(oldLine.getBucket().getInData());
 
         Bucket newBucket = new Bucket(oldLine.getBucket().getName() + "k");
-        newLine.setBucket(newBucket);
+        newLine.setBucket(newBucket.getName());
 
         auxData.forEach(key -> {
             String newBucketName = Hasher.hash(key.getYear(), depth);
             if (newBucketName.equals(newLine.getIndex())) {
                 newLine.getBucket().getInData().add(key);
+                newLine.getBucket().updateCsv("./buckets/" + newLine.getBucket().getName() + ".csv");
                 oldLine.getBucket().getInData().remove(key);
+                oldLine.getBucket().updateCsv("./buckets/" + oldLine.getBucket().getName() + ".csv");
             }
         });
 
@@ -178,7 +178,7 @@ public class Directory {
             DirectoryLine newLine = new DirectoryLine();
             newLine.setIndex("1" + line.getIndex());
             line.setIndex("0" + line.getIndex());
-            newLine.setBucket(line.getBucket());
+            newLine.setBucket(line.getBucket().getName());
 
             Bucket bucket = newLine.getBucket();
             bucket.setName(bucket.getName() + i);
@@ -204,6 +204,7 @@ public class Directory {
             if (bucket.getInData().stream().anyMatch(shopping -> shopping.getYear() == key)){
                 Shopping shoppingToBeDeleted = bucket.getInData().stream().filter(s -> s.getYear() == key).findFirst().orElse(null);
                 bucket.getInData().remove(shoppingToBeDeleted);
+                bucket.updateCsv("./buckets/" + bucket.getName() + ".csv");
                 tuplesRemoved[0] += 1;
                 tuplesRemoved[1] = globalDepth;
                 tuplesRemoved[2] = directoryLine.getLocalDepth();
