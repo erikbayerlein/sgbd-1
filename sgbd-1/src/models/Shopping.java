@@ -11,10 +11,7 @@ public class Shopping {
         setYear(year);
     }
 
-    public Shopping(int id, int year) {
-        setId(id);
-        setValue(1000.30);
-        setYear(year);
+    public Shopping() {
     }
 
     public int getId() {

@@ -5,9 +5,9 @@ import java.util.List;
 
 public class Bucket {
     private String name;
-    private List<Integer> inData = new ArrayList<>();
+    private List<Shopping> inData = new ArrayList<>();
 
-    public Bucket(String name, List<Integer> inData) {
+    public Bucket(String name, List<Shopping> inData) {
         this.setName(name);
         this.setInData(inData);
     }
@@ -16,12 +16,12 @@ public class Bucket {
         this.setName(name);
     }
 
-    public Bucket(List<Integer> inData) {
+    public Bucket(List<Shopping> inData) {
         setInData(inData);
     }
 
     public Bucket(){
-        inData = new ArrayList<Integer>();
+        inData = new ArrayList<Shopping>();
     }
 
     public String getName() {
@@ -32,11 +32,11 @@ public class Bucket {
         this.name = name;
     }
 
-    public List<Integer> getInData() {
+    public List<Shopping> getInData() {
         return inData;
     }
 
-    public void setInData(List<Integer> inData) {
+    public void setInData(List<Shopping> inData) {
         this.inData = inData;
     }
 

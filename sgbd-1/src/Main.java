@@ -9,23 +9,14 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
 
-        List<Integer> csvYears = new ArrayList<>();
-
         // ------------------------- Adicionar lógica de ler in.txt -------------------------
-        final String finalPath = "src/io/in.txt";
+        final String finalPath = "./in.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(finalPath))) {
             String firstLine = br.readLine();
-            int closeIconPosition = firstLine.lastIndexOf(">"); // não precisa
+            int closeIconPosition = firstLine.indexOf("/"); // não precisa
 
-            String globalDepth = firstLine.substring(3, 4);
+            String globalDepth = firstLine.substring(closeIconPosition + 1);
             Directory directory = new Directory(Integer.parseInt(globalDepth));
-
-            List<String[]> shoppingData = CsvReader.readCsv();
-            for (String[] row : shoppingData) {
-                csvYears.add(Integer.parseInt(row[2])); // row[0] = id, row[1] = value, row[2] = year
-            }
-
-            csvYears.forEach(directory::insert);
 
             List<Integer> depths;
 
