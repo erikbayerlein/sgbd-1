@@ -44,6 +44,7 @@ public class Bucket {
         File bucketCsv = new File("src/buckets/" + getName() + ".csv");
         try {
             bucketCsv.createNewFile();
+            bucketCsv.exists();
         } catch (Exception err) {
             System.out.println(err);
         }

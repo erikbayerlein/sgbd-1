@@ -102,10 +102,10 @@ public class Directory {
     }
 
     public int[] insertIntoBucket(int key, Shopping shoppingToBeAdded, BufferedWriter writer) {
-        String bucketName = Hasher.hash(key, globalDepth);
+        String lineName = Hasher.hash(key, globalDepth);
 
         List<DirectoryLine> lines = directoryLines.stream()
-                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketName))
+                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), lineName))
                 .toList();
 
         int[] depths = new int[2];
@@ -114,6 +114,7 @@ public class Directory {
 
         if (bucket.getInData().size() <= 2) { // bucket is not full
             bucket.getInData().add(shoppingToBeAdded);
+            bucket.updateCsv("buckets/" + bucket.getName() + ".csv");
             logger.info("Key inserted in bucket " + bucket.getName());
         } else { // bucket is full
             UUID bucketId = UUID.randomUUID();
@@ -129,6 +130,7 @@ public class Directory {
             } else { // localDepth == globalDepth
                 if (bucket.getInData().size() < 2) { // bucket is not full
                     bucket.getInData().add(shoppingToBeAdded);
+                    bucket.updateCsv("src/buckets/" + bucket.getName() + ".csv");
                 } else { // bucket is full
                     String newIndex = "1" + lines.get(0).getIndex();
                     duplicateDirectory();
