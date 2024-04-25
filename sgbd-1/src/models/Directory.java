@@ -68,17 +68,21 @@ public class Directory {
         return lines;
     }
 
-    public void insert(int key) {
+    public List<Integer> insert(int key) {
         String bucketName = Hasher.hash(key, globalDepth);
         List<DirectoryLine> lines = directoryLines.stream()
                 .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketName))
                 .toList();
+
+        List<Integer> depths = new ArrayList<>();
 
         Bucket bucket = lines.get(0).getBucket();
 
         if (bucket.getInData().size() <= 2) { // bucket is not full
             bucket.getInData().add(key);
             logger.info("Key inserted in bucket " + bucket.getName());
+            depths.add(globalDepth);
+            depths.add(lines.get(0).getLocalDepth());
         } else { // bucket is full
             Bucket newBucket = new Bucket();
 
@@ -86,20 +90,30 @@ public class Directory {
                 if (bucket.getInData().size() == 2) { // bucket is full
                     lines.get(1).setBucket(newBucket);
                     distributeBucket(lines.get(0), lines.get(1), globalDepth, key);
+                    depths.add(globalDepth);
+                    depths.add(lines.get(0).getLocalDepth());
                 } else { // bucket is not full
                     bucket.getInData().add(key);
+                    depths.add(globalDepth);
+                    depths.add(lines.get(0).getLocalDepth());
                 }
             } else { // localDepth == globalDepth
                 if (bucket.getInData().size() < 2) { // bucket is not full
                     bucket.getInData().add(key);
+                    depths.add(globalDepth);
+                    depths.add(lines.get(0).getLocalDepth());
                 } else { // bucket is full
                     String newIndex = "1" + lines.get(0).getIndex();
                     duplicateDirectory();
                     DirectoryLine line = searchByIndex(newIndex);
                     distributeBucket(lines.get(0), line, globalDepth, key);
+                    depths.add(globalDepth);
+                    depths.add(lines.get(0).getLocalDepth());
                 }
             }
         }
+
+        return depths;
     }
 
     private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth, int newValue){
