@@ -136,11 +136,6 @@ public class Directory {
                     duplicateDirectory();
                     DirectoryLine line = searchByIndex(newIndex);
                     distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
-                    try {
-                        writer.write("DUP_DIR:" + globalDepth + "," + line.getLocalDepth() + "\n");
-                    } catch (IOException err) {
-                        System.out.println(err);
-                    }
                     insertIntoBucket(key, shoppingToBeAdded, writer);
                     depths[1] = line.getLocalDepth();
                     insertDTO.setDuplicated(true);
