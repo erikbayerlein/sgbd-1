@@ -2,6 +2,7 @@ package models;
 
 import csv.CsvReader;
 import hashFunction.Hasher;
+import models.dto.InsertDTO;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class Directory {
     private int globalDepth;
@@ -91,7 +93,7 @@ public class Directory {
         return numOfTuplesFound;
     }
 
-    public List<int[]> insert(int key, BufferedWriter writer) {
+    public List<InsertDTO> insert(int key, BufferedWriter writer) {
         List<Shopping> shoppings = CsvReader.readCsv();
 
         return shoppings.stream()
@@ -100,7 +102,7 @@ public class Directory {
                 .toList();
     }
 
-    public int[] insertIntoBucket(int key, Shopping shoppingToBeAdded, BufferedWriter writer) {
+    public InsertDTO insertIntoBucket(int key, Shopping shoppingToBeAdded, BufferedWriter writer) {
         String bucketName = Hasher.hash(key, globalDepth);
 
         List<DirectoryLine> lines = directoryLines.stream()
@@ -110,6 +112,8 @@ public class Directory {
         int[] depths = new int[2];
 
         Bucket bucket = lines.get(0).getBucket();
+
+        InsertDTO insertDTO = new InsertDTO();
 
         if (bucket.getInData().size() <= 2) { // bucket is not full
             bucket.getInData().add(shoppingToBeAdded);
@@ -139,6 +143,7 @@ public class Directory {
                     }
                     insertIntoBucket(key, shoppingToBeAdded, writer);
                     depths[1] = line.getLocalDepth();
+                    insertDTO.setDuplicated(true);
                 }
             }
         }
@@ -148,7 +153,9 @@ public class Directory {
             depths[1] = lines.get(0).getLocalDepth();
         }
 
-        return depths;
+        insertDTO.setDepths(depths);
+
+        return insertDTO;
     }
 
     private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth, Shopping newValue){

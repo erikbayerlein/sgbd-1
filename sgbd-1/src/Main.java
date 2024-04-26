@@ -1,4 +1,5 @@
 import models.Directory;
+import models.dto.InsertDTO;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,7 +21,7 @@ public class Main {
             BufferedWriter writer = new BufferedWriter(new FileWriter("src/io/out.txt"));
             writer.write("PG/" + globalDepth + "\n");
 
-            List<int[]> tuplesAdded;
+            List<InsertDTO> tuplesAdded;
             int[] tuplesRemoved;
             int tuplesFound;
 
@@ -29,7 +30,10 @@ public class Main {
                 switch (line.substring(0, 3)){
                     case "INC":
                         tuplesAdded = directory.insert(Integer.parseInt(line.substring(4)), writer);
-                        writer.write("INC:" + line.substring(4) + "/" + tuplesAdded.get(0)[0] + "," + tuplesAdded.get(0)[1] + "\n");
+                        writer.write("INC:" + line.substring(4) + "/" + tuplesAdded.get(0).getDepths()[0] + "," + tuplesAdded.get(0).getDepths()[1] + "\n");
+                        if (tuplesAdded.get(0).duplicated) {
+                            writer.write("DUP_DIR:" + tuplesAdded.get(0).getDepths()[0] + "," + tuplesAdded.get(0).getDepths()[1] + "\n");
+                        }
                         break;
                     case "REM":
                         tuplesRemoved = directory.remove(Integer.parseInt(line.substring(4)));
