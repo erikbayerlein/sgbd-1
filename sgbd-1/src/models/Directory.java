@@ -137,11 +137,16 @@ public class Directory {
                     } catch (IOException err) {
                         System.out.println(err);
                     }
+                    insertIntoBucket(key, shoppingToBeAdded, writer);
+                    depths[1] = line.getLocalDepth();
                 }
             }
         }
+
         depths[0] = globalDepth;
-        depths[1] = lines.get(0).getLocalDepth();
+        if (depths[1] == 0) {
+            depths[1] = lines.get(0).getLocalDepth();
+        }
 
         return depths;
     }
@@ -153,6 +158,7 @@ public class Directory {
         Bucket newBucket = new Bucket(oldLine.getBucket().getName() + "k");
         newLine.setBucket(newBucket);
 
+        // ESTÁ DANDO ERRADO NO CASO EM QUE 2005 E 2013 POSSUEM O MESMO HASH DEPOIS DE DUPLICADO
         auxData.forEach(key -> {
             String newBucketName = Hasher.hash(key.getYear(), depth);
             if (newBucketName.equals(newLine.getIndex())) {
