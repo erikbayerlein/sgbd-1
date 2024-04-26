@@ -29,7 +29,7 @@ public class Main {
                 switch (line.substring(0, 3)){
                     case "INC":
                         tuplesAdded = directory.insert(Integer.parseInt(line.substring(4)), writer);
-                        writer.write("INC:" + line.substring(4) + "/" + tuplesAdded.get(0)[0] + "," + tuplesAdded.get(1)[1] + "\n");
+                        writer.write("INC:" + line.substring(4) + "/" + tuplesAdded.get(0)[0] + "," + tuplesAdded.get(0)[1] + "\n");
                         break;
                     case "REM":
                         tuplesRemoved = directory.remove(Integer.parseInt(line.substring(4)));
@@ -45,7 +45,7 @@ public class Main {
                 }
             }
 
-            writer.write("PN:/" + directory.getGlobalDepth());
+            writer.write("P:/" + directory.getGlobalDepth());
 
             writer.close();
         } catch (Exception e) {

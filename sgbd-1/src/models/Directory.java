@@ -25,11 +25,6 @@ public class Directory {
             DirectoryLine line = new DirectoryLine(binary, bucket, globalDepth);
             directoryLines.add(line);
         });
-
-//        directoryLines.add(new DirectoryLine("00", new Bucket("A"), 2));
-//        directoryLines.add(new DirectoryLine("01", new Bucket("B"), 2));
-//        directoryLines.add(new DirectoryLine("10", new Bucket("C"),2));
-//        directoryLines.add(new DirectoryLine("11", new Bucket("D"),2));
     }
 
 
@@ -136,12 +131,12 @@ public class Directory {
                     String newIndex = "1" + lines.get(0).getIndex();
                     duplicateDirectory();
                     DirectoryLine line = searchByIndex(newIndex);
+                    distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
                     try {
                         writer.write("DUP_DIR:" + globalDepth + "," + line.getLocalDepth() + "\n");
                     } catch (IOException err) {
                         System.out.println(err);
                     }
-                    distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
                 }
             }
         }
@@ -176,12 +171,10 @@ public class Directory {
         for (int i = 0; i < size; i++) {
             DirectoryLine line = directoryLines.get(i);
             DirectoryLine newLine = new DirectoryLine();
+
             newLine.setIndex("1" + line.getIndex());
             line.setIndex("0" + line.getIndex());
             newLine.setBucket(line.getBucket());
-
-            Bucket bucket = newLine.getBucket();
-            bucket.setName(bucket.getName() + i);
 
             newLine.setLocalDepth(line.getLocalDepth());
             directoryLines.add(newLine);
@@ -202,12 +195,14 @@ public class Directory {
         if (directoryLine != null) {
             Bucket bucket = directoryLine.getBucket();
             if (bucket.getInData().stream().anyMatch(shopping -> shopping.getYear() == key)){
-                Shopping shoppingToBeDeleted = bucket.getInData().stream().filter(s -> s.getYear() == key).findFirst().orElse(null);
-                bucket.getInData().remove(shoppingToBeDeleted);
-                tuplesRemoved[0] += 1;
-                tuplesRemoved[1] = globalDepth;
-                tuplesRemoved[2] = directoryLine.getLocalDepth();
-                logger.info("Key removed from bucket " + bucket.getName());
+                List<Shopping> shoppingToBeDeleted = bucket.getInData().stream().filter(s -> s.getYear() == key).toList();
+                shoppingToBeDeleted.forEach(shopping -> {
+                    bucket.getInData().remove(shopping);
+                    tuplesRemoved[0] += 1;
+                    tuplesRemoved[1] = globalDepth;
+                    tuplesRemoved[2] = directoryLine.getLocalDepth();
+                    logger.info("Key removed from bucket " + bucket.getName());
+                });
             } else {
                 logger.info("Key not found in bucket " + bucket.getName());
             }
