@@ -1,27 +1,27 @@
 package models;
 
-public class DirectoryLine {
+public class Line {
     private String index;
     private int localDepth;
     private Bucket bucket;
 
-    public DirectoryLine(String index, Bucket bucket, int localDepth) {
+    public Line(String index, Bucket bucket, int localDepth) {
         setIndex(index);
         setBucket(bucket);
         setLocalDepth(localDepth);
     }
 
-    public DirectoryLine(String index, int localDepth) {
+    public Line(String index, int localDepth) {
         setIndex(index);
         setLocalDepth(localDepth);
     }
 
-    public DirectoryLine(DirectoryLine directoryLineClone) {
-        setIndex(directoryLineClone.getIndex());
-        setLocalDepth(directoryLineClone.getLocalDepth());
+    public Line(Line lineClone) {
+        setIndex(lineClone.getIndex());
+        setLocalDepth(lineClone.getLocalDepth());
     }
 
-    public DirectoryLine() {}
+    public Line() {}
 
     public String getIndex() {
         return index;

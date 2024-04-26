@@ -1,59 +1,58 @@
 import models.Directory;
-import models.dto.InsertDTO;
+import models.dto.OutFileLine;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
+        final String inputPath = "./sgbd-1/src/externalInfo/in.txt";
+        final String outputPath = "./sgbd-1/src/out.txt";
 
-        final String finalPath = "src/io/in.txt";
-        try (BufferedReader br = new BufferedReader(new FileReader(finalPath))) {
-            String firstLine = br.readLine();
-            int closeIconPosition = firstLine.indexOf("/"); // não precisa
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputPath));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
 
+            String firstLine = reader.readLine();
+            int closeIconPosition = firstLine.indexOf("/");
             String globalDepth = firstLine.substring(closeIconPosition + 1);
+
             Directory directory = new Directory(Integer.parseInt(globalDepth));
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter("src/io/out.txt"));
-            writer.write("PG/" + globalDepth + "\n");
-
-            List<InsertDTO> tuplesAdded;
-            int[] tuplesRemoved;
-            int tuplesFound;
+            writer.write(String.format("PG/%s%n", globalDepth));
 
             String line;
-            while ((line = br.readLine()) != null) {
-                switch (line.substring(0, 3)){
-                    case "INC":
-                        tuplesAdded = directory.insert(Integer.parseInt(line.substring(4)), writer);
-                        writer.write("INC:" + line.substring(4) + "/" + tuplesAdded.get(0).getDepths()[0] + "," + tuplesAdded.get(0).getDepths()[1] + "\n");
-                        if (tuplesAdded.get(0).duplicated) {
-                            writer.write("DUP_DIR:" + tuplesAdded.get(0).getDepths()[0] + "," + tuplesAdded.get(0).getDepths()[1] + "\n");
-                        }
-                        break;
-                    case "REM":
-                        tuplesRemoved = directory.remove(Integer.parseInt(line.substring(4)));
-                        writer.write("REM:" + line.substring(4) + "/" + tuplesRemoved[0] + "," + tuplesRemoved[1] + "," + tuplesRemoved[2] + "\n");
-                        break;
-                    case "BUS":
-                        tuplesFound = directory.search(Integer.parseInt(line.substring(5)));
-                        writer.write("BUS:" + line.substring(5) + "/" + tuplesFound + "\n");
-                        break;
-                    default:
-                        System.err.println("Invalid command: " + line);
-                        break;
-                }
+            while ((line = reader.readLine()) != null) {
+                processLine(line, directory, writer);
             }
 
-            writer.write("P:/" + directory.getGlobalDepth());
-
-            writer.close();
+            writer.write(String.format("P:/%d", directory.getGL()));
         } catch (Exception e) {
-            System.err.println("Error reading file: " + e.getMessage());
+            System.err.println("Error processing file: " + e.getMessage());
+        }
+    }
+
+    private static void processLine(String line, Directory directory, BufferedWriter writer) throws IOException {
+        String command = line.substring(0, 3);
+        int key = command.equals("BUS") ? Integer.parseInt(line.substring(5)) : Integer.parseInt(line.substring(4));
+
+        switch (command) {
+            case "INC":
+                List<OutFileLine> insertResults = directory.insert(key, writer);
+                writer.write("INC:" + line.substring(4) + "/" + insertResults.get(0).getDepths()[0] + "," + insertResults.get(0).getDepths()[1] + "\n");
+                if (insertResults.get(0).duplicated) {
+                    writer.write("DUP_DIR:" + insertResults.get(0).getDepths()[0] + "," + insertResults.get(0).getDepths()[1] + "\n");
+                }
+                break;
+            case "REM":
+                int[] removeResults = directory.remove(key);
+                writer.write(String.format("REM:%d/%d,%d,%d%n", key, removeResults[0], removeResults[1], removeResults[2]));
+                break;
+            case "BUS":
+                long searchResult = directory.search(key);
+                writer.write(String.format("BUS:%d/%d%n", key, searchResult));
+                break;
+            default:
+                System.err.println("Invalid command: " + command);
+                break;
         }
     }
 }

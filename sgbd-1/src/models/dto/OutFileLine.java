@@ -1,15 +1,15 @@
 package models.dto;
 
-public class InsertDTO {
+public class OutFileLine {
     public boolean duplicated = false;
     int[] depths;
 
-    public InsertDTO(boolean duplicated, int[] depths) {
+    public OutFileLine(boolean duplicated, int[] depths) {
         this.duplicated = duplicated;
         this.depths = depths;
     }
 
-    public InsertDTO() {
+    public OutFileLine() {
     }
 
     public boolean isDuplicated() {

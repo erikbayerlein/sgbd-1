@@ -2,10 +2,9 @@ package models;
 
 import csv.CsvReader;
 import hashFunction.Hasher;
-import models.dto.InsertDTO;
+import models.dto.OutFileLine;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -13,155 +12,127 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Directory {
-    private int globalDepth;
-    private List<DirectoryLine> directoryLines = new ArrayList<>();
-
+    private int GL;
+    private final List<Line> lines = new ArrayList<>();
     Logger logger = Logger.getLogger(getClass().getName());
 
-    public Directory(int globalDepth) {
-        setGlobalDepth(globalDepth);
-
-        List<String> binaryNumbers = generateBinaryNumbers(globalDepth);
+    public Directory(int GL) {
+        this.GL = GL;
+        List<String> binaryNumbers = generateBinaryNumbers(GL);
         binaryNumbers.forEach(binary -> {
             Bucket bucket = new Bucket(binary);
-            DirectoryLine line = new DirectoryLine(binary, bucket, globalDepth);
-            directoryLines.add(line);
+            Line line = new Line(binary, bucket, GL);
+            lines.add(line);
         });
+        logger.info("Directory created with global depth: " + GL);
     }
 
-
-    public int getGlobalDepth() {
-        return globalDepth;
+    public int getGL() {
+        return GL;
     }
 
-    public void setGlobalDepth(int globalDepth) {
-        this.globalDepth = globalDepth;
+    public void setGL(int GL) {
+        this.GL = GL;
     }
 
-    public List<DirectoryLine> getDirectoryLines() {
-        return directoryLines;
+    public List<Line> getLines() {
+        return lines;
     }
 
-    public void setDirectoryLines(List<DirectoryLine> directoryLines) {
-        this.directoryLines = directoryLines;
-    }
-
-    private static List<String> generateBinaryNumbers(int e) {
+    private static List<String> generateBinaryNumbers(int depth) {
         List<String> binaryNumbers = new ArrayList<>();
-        int totalNumbers = (int) Math.pow(2, e);
-
+        int totalNumbers = (int) Math.pow(2, depth);
         for (int i = 0; i < totalNumbers; i++) {
-            String binary = Integer.toBinaryString(i);
-            while (binary.length() < e) {
-                binary = "0" + binary;
+            StringBuilder binary = new StringBuilder(Integer.toBinaryString(i));
+            while (binary.length() < depth) {
+                binary.insert(0, "0");
             }
-            binaryNumbers.add(binary);
+            binaryNumbers.add(binary.toString());
         }
-
         return binaryNumbers;
     }
 
-    public DirectoryLine searchByIndex(String index) {
-        return directoryLines.stream()
-                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), index))
+    public Line searchByIndex(String index) {
+        return lines.stream()
+                .filter(line -> Objects.equals(line.getIndex(), index))
                 .findFirst()
                 .orElse(null);
     }
 
-    public int search(int key) {
-        String bucketIndex = Hasher.hash(key, globalDepth);
-        List<DirectoryLine> lines = directoryLines.stream()
-                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketIndex))
-                .toList();
+    public long search(int key) {
+        String bucketIndex = Hasher.hash(key, GL);
+        List<Line> matchingLines = lines.stream()
+                .filter(line -> Objects.equals(line.getIndex(), bucketIndex))
+                .collect(Collectors.toList());
 
-        int numOfTuplesFound = 0;
-
-        for (DirectoryLine line : lines) {
-            Bucket bucket = line.getBucket();
-            if (bucket != null) {
-                if (bucket.getInData().stream().anyMatch(shopping -> shopping.getYear() == key)) {
-                    numOfTuplesFound++;
-                    logger.info("Key found in bucket " + bucket.getName());
-                } else {
-                    logger.info("Key not found in bucket " + bucket.getName());
-                }
-            } else {
-                logger.info("Bucket does not exist");
-            }
-        }
-
-        return numOfTuplesFound;
+        return matchingLines.stream()
+                .filter(line -> line.getBucket() != null && line.getBucket().getInData().stream().anyMatch(shopping -> shopping.getYear() == key))
+                .count();
     }
 
-    public List<InsertDTO> insert(int key, BufferedWriter writer) {
+    public List<OutFileLine> insert(int key, BufferedWriter writer) {
         List<Shopping> shoppings = CsvReader.readCsv();
-
         return shoppings.stream()
                 .filter(shopping -> shopping.getYear() == key)
-                .map(s -> insertIntoBucket(key, s, writer))
-                .toList();
+                .map(s -> insertIndividual(key, s, writer))
+                .collect(Collectors.toList());
     }
 
-    public InsertDTO insertIntoBucket(int key, Shopping shoppingToBeAdded, BufferedWriter writer) {
-        String bucketName = Hasher.hash(key, globalDepth);
-
-        List<DirectoryLine> lines = directoryLines.stream()
-                .filter(directoryLine -> Objects.equals(directoryLine.getIndex(), bucketName))
+    public OutFileLine insertIndividual(int key, Shopping shoppingToBeAdded, BufferedWriter writer) {
+        String bucketName = Hasher.hash(key, GL);
+        List<Line> matchingLines = lines.stream()
+                .filter(line -> Objects.equals(line.getIndex(), bucketName))
                 .toList();
 
         int[] depths = new int[2];
+        Bucket bucket = matchingLines.get(0).getBucket();
+        OutFileLine outFileLine = new OutFileLine();
 
-        Bucket bucket = lines.get(0).getBucket();
-
-        InsertDTO insertDTO = new InsertDTO();
-
-        if (bucket.getInData().size() <= 2) { // bucket is not full
+        if (bucket.getInData().size() <= 2) {
             bucket.getInData().add(shoppingToBeAdded);
-            logger.info("Key inserted in bucket " + bucket.getName());
+            logger.info("Shopping item with key " + key + " inserted in bucket " + bucket.getName());
         } else { // bucket is full
+            logger.info("Bucket " + bucket.getName() + " is full. Creating a new bucket.");
             Bucket newBucket = new Bucket();
-
-            if (lines.size() > 1) { // localDepth < globalDepth
-                if (bucket.getInData().size() == 2) { // bucket is full
-                    lines.get(1).setBucket(newBucket);
-                    distributeBucket(lines.get(0), lines.get(1), globalDepth, shoppingToBeAdded);
+            if (matchingLines.size() > 1) {
+                if (bucket.getInData().size() == 2) {
+                    matchingLines.get(1).setBucket(newBucket);
+                    divideBucket(matchingLines.get(0), matchingLines.get(1), GL, shoppingToBeAdded);
                 } else { // bucket is not full
                     bucket.getInData().add(shoppingToBeAdded);
                 }
             } else { // localDepth == globalDepth
-                if (bucket.getInData().size() < 2) { // bucket is not full
+                if (bucket.getInData().size() < 2) {
                     bucket.getInData().add(shoppingToBeAdded);
                 } else { // bucket is full
-                    String newIndex = "1" + lines.get(0).getIndex();
+                    String newIndex = "1" + matchingLines.get(0).getIndex();
                     duplicateDirectory();
-                    DirectoryLine line = searchByIndex(newIndex);
-                    distributeBucket(lines.get(0), line, globalDepth, shoppingToBeAdded);
-                    insertIntoBucket(key, shoppingToBeAdded, writer);
+                    Line line = searchByIndex(newIndex);
+                    divideBucket(matchingLines.get(0), line, GL, shoppingToBeAdded);
+                    insertIndividual(key, shoppingToBeAdded, writer);
                     depths[1] = line.getLocalDepth();
-                    insertDTO.setDuplicated(true);
+                    outFileLine.setDuplicated(true);
                 }
             }
         }
 
-        depths[0] = globalDepth;
+        depths[0] = GL;
         if (depths[1] == 0) {
-            depths[1] = lines.get(0).getLocalDepth();
+            depths[1] = matchingLines.get(0).getLocalDepth();
         }
 
-        insertDTO.setDepths(depths);
-
-        return insertDTO;
+        outFileLine.setDepths(depths);
+        return outFileLine;
     }
 
-    private void distributeBucket(DirectoryLine oldLine, DirectoryLine newLine, int depth, Shopping newValue){
+    private void divideBucket(Line oldLine, Line newLine, int depth, Shopping newValue){
         oldLine.getBucket().getInData().add(newValue);
-        List<Shopping> auxData = new ArrayList<>(oldLine.getBucket().getInData());
+        List<Shopping> oldBucketData = new ArrayList<>(oldLine.getBucket().getInData());
 
         Bucket newBucket = new Bucket(oldLine.getBucket().getName() + "k");
         newLine.setBucket(newBucket);
 
-        // ESTÁ DANDO ERRADO NO CASO EM QUE 2005 E 2013 POSSUEM O MESMO HASH DEPOIS DE DUPLICADO
-        auxData.forEach(key -> {
+        oldBucketData.forEach(key -> {
             String newBucketName = Hasher.hash(key.getYear(), depth);
             if (newBucketName.equals(newLine.getIndex())) {
                 newLine.getBucket().getInData().add(key);
@@ -174,51 +145,42 @@ public class Directory {
     }
 
     private void duplicateDirectory() {
-        globalDepth++;
-        int size = directoryLines.size();
+        GL++;
+        int size = lines.size();
         for (int i = 0; i < size; i++) {
-            DirectoryLine line = directoryLines.get(i);
-            DirectoryLine newLine = new DirectoryLine();
+            Line line = lines.get(i);
+            Line newLine = new Line();
 
             newLine.setIndex("1" + line.getIndex());
             line.setIndex("0" + line.getIndex());
             newLine.setBucket(line.getBucket());
 
             newLine.setLocalDepth(line.getLocalDepth());
-            directoryLines.add(newLine);
+            lines.add(newLine);
         }
 
-        System.out.println("Directory duplicated");
+        logger.info("Directory duplicated. New global depth: " + GL);
     }
 
     public int[] remove(int key) {
-        String bucketIndex = Hasher.hash(key, globalDepth);
-        DirectoryLine directoryLine = directoryLines.stream()
-                .filter(line -> Objects.equals(line.getIndex(), bucketIndex))
+        String bucketIndex = Hasher.hash(key, GL);
+        Line line = lines.stream()
+                .filter(DLine -> Objects.equals(DLine.getIndex(), bucketIndex))
                 .findFirst()
                 .orElse(null);
 
         int[] tuplesRemoved = new int[3];
 
-        if (directoryLine != null) {
-            Bucket bucket = directoryLine.getBucket();
-            if (bucket.getInData().stream().anyMatch(shopping -> shopping.getYear() == key)){
-                List<Shopping> shoppingToBeDeleted = bucket.getInData().stream().filter(s -> s.getYear() == key).toList();
-                shoppingToBeDeleted.forEach(shopping -> {
-                    bucket.getInData().remove(shopping);
-                    tuplesRemoved[0] += 1;
-                    tuplesRemoved[1] = globalDepth;
-                    tuplesRemoved[2] = directoryLine.getLocalDepth();
-                    logger.info("Key removed from bucket " + bucket.getName());
-                });
-            } else {
-                logger.info("Key not found in bucket " + bucket.getName());
-            }
-        } else {
-            logger.info("Key not found in directory");
+        if (line != null) {
+            Bucket bucket = line.getBucket();
+            List<Shopping> shoppingToBeDeleted = bucket.getInData().stream().filter(s -> s.getYear() == key).toList();
+            bucket.getInData().removeAll(shoppingToBeDeleted);
+            tuplesRemoved[0] = shoppingToBeDeleted.size();
+            tuplesRemoved[1] = GL;
+            tuplesRemoved[2] = line.getLocalDepth();
+            logger.info("Removed " + tuplesRemoved[0] + " shopping items with key " + key + " from bucket " + bucket.getName());
         }
 
         return tuplesRemoved;
     }
-
 }
